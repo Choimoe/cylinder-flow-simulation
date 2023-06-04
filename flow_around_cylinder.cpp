@@ -1,4 +1,4 @@
-﻿// if [ -x "$(command -v qsub)" ]; then ./q run.sh; else ./run.sh; fi
+// if [ -x "$(command -v qsub)" ]; then ./q run.sh; else ./run.sh; fi
 #include <iostream>
 using namespace std;
 
