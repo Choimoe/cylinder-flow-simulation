@@ -258,22 +258,22 @@ void push() {
 
     auto pNew_W = buf_new_W.get_access<AC_WRITE>(h);
 
-    h.parallel_for(sycl::range<2>(M, N), [=](sycl::id<2> idx) {
-      int i = idx[0], index = i ? i - 1 : M - 1;
-      int j = idx[1];
-      if (j != 0) {
-        double a = pA[j][i], b = pB[j][i], r = pR[j][i], o = pO[j][i], e = pE[j][i];
+    h.parallel_for(sycl::range<2>(N, M), [=](sycl::id<2> idx) {
+      int i = idx[0];
+      int j = idx[1], index = j ? j - 1 : M - 1;
+      if (i != 0) {
+        double a = pA[i][j], b = pB[i][j], r = pR[i][j], o = pO[i][j], e = pE[i][j];
         double b_e = (a + o / 2.0) / Re, b_w = (a - o / 2.0) / Re,
                b_s = (r + e / 2.0) / Re, b_n = (r - e / 2.0) / Re;
-        double b_w1 = (pU[j][i] * pXi_x [j][i] + pV[j][i] * pXi_y [j][i]) / 2.0,
-               b_n1 = (pU[j][i] * pEta_x[j][i] + pV[j][i] * pEta_y[j][i]) / 2.0,
+        double b_w1 = (pU[i][j] * pXi_x [i][j] + pV[i][j] * pXi_y [i][j]) / 2.0,
+               b_n1 = (pU[i][j] * pEta_x[i][j] + pV[i][j] * pEta_y[i][j]) / 2.0,
                b_e1 = -b_w1,
                b_s1 = -b_n1;
-        pNew_W[j][i] = pW[j][i] +
-            dt * (pW[j][i + 1] * (b_e + b_e1) + pW[j][index] * (b_w + b_w1) +
-                  pW[j + 1][i] * (b_s + b_s1) + pW[j - 1][i] * (b_n + b_n1) -
-                  2.0 / Re * (a + r) * pW[j][i] +
-                  2.0 * b / Re * (pW[j + 1][i + 1] - pW[j + 1][i - 1] - pW[j + 1][index] + pW[j - 1][index]));
+        pNew_W[i][j] = pW[i][j] +
+            dt * (pW[i][j + 1] * (b_e + b_e1) + pW[i][index] * (b_w + b_w1) +
+                  pW[i + 1][j] * (b_s + b_s1) + pW[i - 1][j] * (b_n + b_n1) -
+                  2.0 / Re * (a + r) * pW[i][j] +
+                  2.0 * b / Re * (pW[i + 1][j + 1] - pW[i + 1][j - 1] - pW[i + 1][index] + pW[i - 1][index]));
       }
     });
   });
@@ -306,20 +306,20 @@ void psi_iteration() {
       auto pPSI     = buf_PSI.get_access    <AC_READ>(h);
       auto pNew_PSI = buf_new_PSI.get_access<AC_WRITE>(h);
 
-      h.parallel_for(sycl::range<2>(M, N), [=](sycl::id<2> idx) {
-        int i = idx[0], index = i ? i - 1 : M - 1;
-        int j = idx[1];
-        if (j != 0) {
-          double a = pA[j][i], b = pB[j][i], r = pR[j][i], o = pO[j][i],
-                 e = pE[j][i];
+      h.parallel_for(sycl::range<2>(N, M), [=](sycl::id<2> idx) {
+        int i = idx[0];
+        int j = idx[1], index = j ? j - 1 : M - 1;
+        if (i != 0) {
+          double a = pA[i][j], b = pB[i][j], r = pR[i][j], o = pO[i][j],
+                 e = pE[i][j];
 
-          pNew_PSI[j][i] =
-              ((a - o / 2.0) * pPSI[j][index] + (a + o / 2.0) * pPSI[j][i + 1] +
-               (r - e / 2.0) * pPSI[j - 1][i] + (r + e / 2.0) * pPSI[j + 1][i] +
+          pNew_PSI[i][j] =
+              ((a - o / 2.0) * pPSI[i][index] + (a + o / 2.0) * pPSI[i][j + 1] +
+               (r - e / 2.0) * pPSI[i - 1][j] + (r + e / 2.0) * pPSI[i + 1][j] +
                2 * b *
-                   (pPSI[j + 1][i + 1] - pPSI[j - 1][i + 1] -
-                    pPSI[j + 1][index] + pPSI[j - 1][index]) -
-               pW[j][i]) /
+                   (pPSI[i + 1][j + 1] - pPSI[i - 1][j + 1] -
+                    pPSI[i + 1][index] + pPSI[i - 1][index]) -
+               pW[i][j]) /
               (2 * a + 2 * r);
         }
       });
@@ -358,14 +358,14 @@ void velocity() {
     auto pU     = buf_U.get_access    <AC_WRITE>(h);
     auto pV     = buf_V.get_access    <AC_WRITE>(h);
 
-    h.parallel_for(sycl::range<2>(M, N), [=](sycl::id<2> idx) {
-      int i = idx[0], index = i ? i - 1 : M - 1;
-      int j = idx[1];
-      if (j != 0) {
-        pU[j][i] = pX_xi[j][i]  / pJ[j][i] * (pPSI[j + 1][i] - pPSI[j - 1][i]) / 2.0 / d
-                 - pX_eta[j][i] / pJ[j][i] * (pPSI[j][i + 1] - pPSI[j][index]) / 2.0 / d;
-        pV[j][i] = pY_xi[j][i]  / pJ[j][i] * (pPSI[j + 1][i] - pPSI[j - 1][i]) / 2.0 / d
-                 - pY_eta[j][i] / pJ[j][i] * (pPSI[j][i + 1] - pPSI[j][index]) / 2.0 / d;
+    h.parallel_for(sycl::range<2>(N, M), [=](sycl::id<2> idx) {
+      int i = idx[0];
+      int j = idx[1], index = j ? j - 1 : M - 1;
+      if (i != 0) {
+        pU[i][j] = pX_xi[i][j]  / pJ[i][j] * (pPSI[i + 1][j] - pPSI[i - 1][j]) / 2.0 / d
+                 - pX_eta[i][j] / pJ[i][j] * (pPSI[i][j + 1] - pPSI[i][index]) / 2.0 / d;
+        pV[i][j] = pY_xi[i][j]  / pJ[i][j] * (pPSI[i + 1][j] - pPSI[i - 1][j]) / 2.0 / d
+                 - pY_eta[i][j] / pJ[i][j] * (pPSI[i][j + 1] - pPSI[i][index]) / 2.0 / d;
       }
     });
   });

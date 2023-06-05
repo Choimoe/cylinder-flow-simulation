@@ -57,3 +57,18 @@ You can use `Matlab` or `Python` for data analysis, such as using `plot_flt.m` a
 The following is a schematic diagram of the speed when `Re = 200, T = 100s` (the color depth represents the speed):
 
 ![schematic diagram of the speed](./img/spd_cl.jpg)
+
+## Technical Details
+
+The specific optimization is reflected in the three functions of the vorticity FTCS iteration `push()`、the flow function iteration `psi_iteration()`、and the velocity solution `velocity()`, because these three parts perform a large number of matrix operations, and the amortized complexity of each iteration is $\mathcal O(n^2)$. Therefore, consider using [SYCL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/data-parallel-c-plus-plus.html) for heterogeneous computing. The other function `boundary()` in the same iteration has a complexity of only $\mathcal O(n)$, no need for special optimization.
+
+Here is the iterated discrete form of the stream function $\psi$，Since the values of $\alpha, \beta, \gamma, \delta, \varepsilon$ are only determined by the grid information，Therefore, preprocessing can be performed at the beginning of the program. Although this approach increases the addressing time, it reduces the number of floating-point calculations.
+
+$$
+\begin{matrix} 
+\psi_{i, j}^{k+1}&=\frac{1}{2(\alpha+\gamma)}\left[\left(\alpha-\frac{\delta}{2}\right) \psi_{i-1, j}^{k}+\left(\alpha+\frac{\delta}{2}\right) \psi_{i+1, j}^{k}+\left(\gamma-\frac{\varepsilon}{2}\right) \psi_{i, j-1}^{k}+\left(\gamma+\frac{\varepsilon}{2}\right) \psi_{i, j+1}^{k}\right] \\  
+  &+\frac{1}{2(\alpha+\gamma)}\left[2 \beta\left(\psi^{k}{ }_{i+1, j+1}-\psi^{k}{ }_{i+1, j-1}-\psi^{k}{ }_{i-1, j+1}+\psi^{k}{ }_{i-1, j-1}\right)-\omega_{i, j}\right]
+\end{matrix}
+$$
+
+`MatrixXd` defaults to column priority, which leads to discontinuous memory in each row when converted to an array by `MatrixXd::data()`. I exchange the summation symbol and transform the formula to traverse by column to increase addressing efficiency.
