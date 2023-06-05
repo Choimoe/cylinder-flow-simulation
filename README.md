@@ -65,10 +65,10 @@ The specific optimization is reflected in the three functions of the vorticity F
 Here is the iterated discrete form of the stream function $\psi$，Since the values of $\alpha, \beta, \gamma, \delta, \varepsilon$ are only determined by the grid information，Therefore, preprocessing can be performed at the beginning of the program. Although this approach increases the addressing time, it reduces the number of floating-point calculations.
 
 $$
-\begin{matrix} 
+\begin{align}
 \psi_{i, j}^{k+1}&=\frac{1}{2(\alpha+\gamma)}\left[\left(\alpha-\frac{\delta}{2}\right) \psi_{i-1, j}^{k}+\left(\alpha+\frac{\delta}{2}\right) \psi_{i+1, j}^{k}+\left(\gamma-\frac{\varepsilon}{2}\right) \psi_{i, j-1}^{k}+\left(\gamma+\frac{\varepsilon}{2}\right) \psi_{i, j+1}^{k}\right] \\  
-  &+\frac{1}{2(\alpha+\gamma)}\left[2 \beta\left(\psi^{k}{ }_{i+1, j+1}-\psi^{k}{ }_{i+1, j-1}-\psi^{k}{ }_{i-1, j+1}+\psi^{k}{ }_{i-1, j-1}\right)-\omega_{i, j}\right]
-\end{matrix}
+  &+\frac{1}{2(\alpha+\gamma)}\left[2 \beta\left(\psi^{k}_{i+1, j+1}-\psi^{k}_{i+1, j-1}-\psi^{k}_{i-1, j+1}+\psi^{k}_{i-1, j-1}\right)-\omega_{i, j}\right]
+\end{align}
 $$
 
 `MatrixXd` defaults to column priority, which leads to discontinuous memory in each row when converted to an array by `MatrixXd::data()`. I exchange the summation symbol and transform the formula to traverse by column to increase addressing efficiency.
