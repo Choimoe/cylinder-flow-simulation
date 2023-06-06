@@ -72,3 +72,17 @@ $$
 $$
 
 `MatrixXd` defaults to column priority, which leads to discontinuous memory in each row when converted to an array by `MatrixXd::data()`. I exchange the summation symbol and transform the formula to traverse by column to increase addressing efficiency.
+
+## Problem
+
+We can use assembly code to calculate the clock cycle:
+
+```c++
+static __inline unsigned long long rdtsc(void) {
+  unsigned hi, lo;
+  __asm __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
+  return ((unsigned long long)lo) | (((unsigned long long)hi) << 32);
+} 
+```
+
+Taking the `push()` function as an example, it takes a lot of time to read data into the device memory, and about 73% of the time is spent on reading in a large matrix. In addition, there is still a lot of time spent on addressing the matrix. For codes that do not use heterogeneous computing, each location in `push()` consumes an average of 1172 clock cycles for data reading, and an average of 1543 clock cycles for floating-point calculations.
