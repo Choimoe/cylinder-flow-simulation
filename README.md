@@ -1,5 +1,7 @@
 # Cylinder Flow Simulation
 
+This repository is used to participate in [a competition organized by Intel®](https://www.dev4one.com/).
+
 ## Pre-requisites
 
 - `Eigen` Library：[libeigen / eigen · GitLab](https://gitlab.com/libeigen/eigen)。
